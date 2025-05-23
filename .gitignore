@@ -1,0 +1,7 @@
+Packages/
+ServerPackages/
+sourcemap.json
+wally.lock
+/test*game.rbxlx
+/*.rbxl.lock
+/*.rbxlx.lock
