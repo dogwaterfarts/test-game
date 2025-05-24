@@ -1,8 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Cmdr = require(ReplicatedStorage.Packages.cmdr)
 local Gun = require(ReplicatedStorage.Modules.Gun)
-
-Cmdr:RegisterDefaultCommands()
 
 game.ReplicatedStorage.test.OnServerEvent:Connect(function(player: Player, Camera: CFrame)
 	local p1Gun = Gun.new(100, 10, 1, 1, 1)
