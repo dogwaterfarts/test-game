@@ -1,13 +1,7 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Networker = require(ReplicatedStorage.Packages.networker)
 local Workspace = game:GetService("Workspace")
 local Gun = {}
 Gun._index = Gun
 local Characters = {}
-
-local serviceClient = {}
-
-local networker = Networker.client.new("myService", serviceClient)
 
 export type Gun = typeof(setmetatable(
 	{} :: {
@@ -71,7 +65,8 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	end
 
 	print("player")
-	networker:Fire("Damage", FindFirstModelParent(RaycastResult.Instance), currentGun.power)
+
+	FindFirstModelParent(RaycastResult.Instance):FindFirstChild("Humanoid"):TakeDamage(currentGun.power)
 
 	return
 end

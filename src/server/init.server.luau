@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Cmdr = require(ReplicatedStorage.Packages.cmdr)
-local Networker = require(ReplicatedStorage.Packages.networker)
-local Gun = require(ReplicatedStorage.Shared.Modules.Gun)
+local Gun = require(ReplicatedStorage.Modules.Gun)
 
 Cmdr:RegisterDefaultCommands()
 
@@ -11,22 +10,35 @@ game.ReplicatedStorage.test.OnServerEvent:Connect(function(player: Player, Camer
 	print("shot")
 end)
 
-local myService = {}
+game.Players.PlayerAdded:Connect(function(Player)
+	Player.CharacterAdded:Connect(function(character)
+		if not character or not character:FindFirstChild("HumanoidRootPart") then
+			return
+		end
+		local hitbox = Instance.new("Part")
+		hitbox.Name = "Hitbox"
+		hitbox.Size = Vector3.new(3.2, 5.5, 1.8)
+		hitbox.Transparency = 1
+		hitbox.CanCollide = false
+		hitbox.Anchored = true
+		hitbox.Parent = character
 
-function myService:init()
-	-- initialize networker to the service/object
-	self.networker = Networker.server.new("myService", self, {
-		self.Damage,
-	})
-end
+		hitbox.CFrame = character.HumanoidRootPart.CFrame
 
-function myService:Damage(_: Player, player: Player, damage: number)
-	if not player.Character then
-		return
-	end
+		local connection
+		connection = game:GetService("RunService").Heartbeat:Connect(function()
+			hitbox.CFrame = character.HumanoidRootPart.CFrame
 
-	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid:TakeDamage(damage)
-	end
-end
+			if not character:FindFirstChild("Humanoid") or character.Humanoid.Health <= 0 then
+				connection:Disconnect()
+				hitbox:Destroy()
+			end
+		end)
+	end)
+	Player.CharacterRemoving:Connect(function(character)
+		local hitbox = character:FindFirstChild("Hitbox")
+		if hitbox then
+			hitbox:Destroy()
+		end
+	end)
+end)
