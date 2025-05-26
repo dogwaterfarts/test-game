@@ -49,7 +49,7 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 
 	for _, person in game.Players:GetChildren() do
 		if person ~= Player then
-			table.insert(Characters, person.Character)
+			table.insert(Characters, person.Character.Hitbox)
 		end
 	end
 
