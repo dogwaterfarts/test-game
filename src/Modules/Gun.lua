@@ -2,6 +2,7 @@ local Workspace = game:GetService("Workspace")
 local Gun = {}
 Gun._index = Gun
 local Characters = {}
+local Waiting = {}
 
 export type Gun = typeof(setmetatable(
 	{} :: {
@@ -14,12 +15,49 @@ export type Gun = typeof(setmetatable(
 	Gun
 ))
 
+-- Iterate through the children of the item until we find a Model parent
 local function FindFirstModelParent(item)
 	while item.ClassName ~= "Model" do
 		item = item.Parent
+
+		if not item then
+			return nil -- Return nil if no Model parent is found
+		end
 	end
 
 	return item
+end
+
+function Gun:CreateHitbox(character: Model): ()
+	if not character or not character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Hitbox") then
+		return
+	end
+
+	-- Create a hitbox part for the character
+	local hitbox = Instance.new("Part")
+	hitbox.Name = "Hitbox"
+	hitbox.Size = Vector3.new(3.2, 5.5, 1.8)
+	hitbox.Transparency = 1
+	hitbox.CanCollide = false
+	hitbox.Anchored = true
+	hitbox.Parent = character
+	hitbox:SetNetworkOwner(nil) -- Set to nil to allow server-side control
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	local Humanoid = character:FindFirstChild("Humanoid")
+
+	hitbox.CFrame = rootPart.CFrame
+
+	-- Ensure that the hitbox follows the player.
+	local connection
+	connection = game:GetService("RunService").Heartbeat:Connect(function()
+		hitbox.CFrame = rootPart.CFrame
+
+		if not Humanoid or Humanoid.Health <= 0 then
+			connection:Disconnect()
+			hitbox:Destroy()
+		end
+	end)
 end
 
 -- Create a new gun with characteristics
@@ -42,6 +80,10 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 		return
 	end
 
+	if Waiting[Player.UserId] then
+		return
+	end
+
 	local LookVector = CameraCFrame.LookVector
 
 	-- Find Player Characters
@@ -53,10 +95,18 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 		end
 	end
 
+	--Create a RaycastParams object to only apply to the characters
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params:AddToFilter(Characters)
 
+	-- Delay to prevent spamming and implement a shoot speed
+	Waiting[Player.UserId] = true
+	task.delay(60 / currentGun.roundsPerMinute, function()
+		Waiting[Player.UserId] = false
+	end)
+
+	-- Perform the raycast
 	local RaycastResult = Workspace:Raycast(CameraCFrame.Position, LookVector * currentGun.range, params)
 
 	if not RaycastResult then
@@ -66,9 +116,33 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 
 	print("player")
 
+	-- Hurt ther hit player
 	FindFirstModelParent(RaycastResult.Instance):FindFirstChild("Humanoid"):TakeDamage(currentGun.power)
 
 	return
 end
 
 return Gun
+--[[
+	Module for Gun functionality.
+	Contains methods to create a gun and shoot it.
+	Handles raycasting to detect hits on players.
+]]
+--
+-- Usage:
+-- local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- local Gun = require(ReplicatedStorage.Modules.Gun)
+-- Create a new gun instance with specified parameters:
+-- local myGun = Gun.new(100, 10, 5, 30, 600)
+
+-- Create a hitbox for the player's character when they join:
+-- game.Players.PlayerAdded:Connect(function(player)
+--     player.CharacterAdded:Connect(function(character)
+--         Gun:CreateHitbox(character)
+--     end)
+-- end)
+
+-- To shoot the gun, call the Shoot method with the player and camera CFrame:
+-- local player = game.Players.LocalPlayer
+-- local cameraCFrame = workspace.CurrentCamera.CFrame
+-- Gun.Shoot(myGun, player, cameraCFrame)
