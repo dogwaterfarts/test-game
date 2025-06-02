@@ -6,9 +6,6 @@
     "ReplicatedStorage": {
       "Modules": {
         "$path": "src/modules"
-      },
-      "Packages": {
-        "$path": "Packages"
       }
     },
 

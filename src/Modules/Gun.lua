@@ -1,4 +1,4 @@
-local Workspace = game:GetService("Workspace")
+local Bullet = require(script.Parent.BulletDrop) -- Assuming Bullet is in the same directory
 local Gun = {}
 Gun._index = Gun
 local Characters = {}
@@ -76,7 +76,6 @@ function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
 end
 
 function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
-	print("Shooting with gun:", currentGun)
 	if not Player.Character then
 		return
 	end
@@ -101,24 +100,36 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params:AddToFilter(Characters)
 
-	-- Delay to prevent spamming and implement a shoot speed
 	Waiting[Player.UserId] = true
 	task.delay(60 / currentGun.roundsPerMinute, function()
 		Waiting[Player.UserId] = false
 	end)
 
 	-- Perform the raycast
-	local RaycastResult = Workspace:Raycast(CameraCFrame.Position, LookVector * currentGun.range, params)
+	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.range, params)
+	-- Check if the bullet hit anything
+	bullet.onHit.Event:Connect(function(hitResult)
+		if hitResult then
+			print("Hit detected:", hitResult.Instance:GetFullName())
+			local hitParent = FindFirstModelParent(hitResult.Instance)
 
-	if not RaycastResult then
-		print("no player")
-		return
-	end
+			if hitParent and hitParent:FindFirstChild("Humanoid") then
+				hitParent.Humanoid:TakeDamage(currentGun.power)
+			end
+		end
+	end)
 
-	print("player")
+	-- local RaycastResult = Workspace:Raycast(CameraCFrame.Position, LookVector * currentGun.range, params)
 
-	-- Hurt ther hit player
-	FindFirstModelParent(RaycastResult.Instance):FindFirstChild("Humanoid"):TakeDamage(currentGun.power)
+	-- if not RaycastResult then
+	-- 	print("no player")
+	-- 	return
+	-- end
+
+	-- print("player")
+
+	-- -- Hurt ther hit player
+	-- FindFirstModelParent(RaycastResult.Instance):FindFirstChild("Humanoid"):TakeDamage(currentGun.power)
 
 	return
 end
