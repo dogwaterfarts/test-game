@@ -18,14 +18,19 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 
 	if args and Method == "Shoot" then
 		local Camera
+		local resistance
 		for _, v in pairs(args) do
-			if type(v) then
+			if typeof(v) == "CFrame" then
 				Camera = v
+			end
+
+			if typeof(v) == "number" then
+				resistance = v
 			end
 		end
 
-		Gun:Shoot(PlayerGuns[player.UserId][currentGun], player, Camera)
-		print("Shot fired with gun:", currentGun[player.UserId])
+		Gun:Shoot(PlayerGuns[player.UserId][currentGun[player.UserId]], player, Camera, resistance)
+		--print("Shot fired with gun:", currentGun[player.UserId])
 		return
 	end
 
@@ -33,13 +38,14 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		local gunName = 1 - currentGun[player.UserId]:sub(-1) -- Toggle between Gun0 and Gun1
 		currentGun[player.UserId] = "Gun" .. gunName
 
-		currentGun[player.UserId] = Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId])
+		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId])
 	end
 end)
 
 game.Players.PlayerAdded:Connect(function(Player)
 	Player.CharacterAdded:Connect(function(character)
-		PlayerGuns[Player.UserId] = PlayerGuns[Player.UserId] or {}
+		PlayerGuns[Player.UserId] = {}
+
 		-- Initialize guns for the player
 
 		local Gun0 = Gun.new(100, 10, 5, 30, 600)

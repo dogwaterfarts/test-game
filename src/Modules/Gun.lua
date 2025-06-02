@@ -28,6 +28,21 @@ local function FindFirstModelParent(item)
 	return item
 end
 
+-- Create a new gun with characteristics
+function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
+	local self = {
+		range = range,
+		power = power,
+		weight = weight,
+		magSize = magSize,
+		roundsPerMinute = roundsPerMinute,
+	}
+
+	setmetatable(self, Gun)
+
+	return self
+end
+
 function Gun:CreateHitbox(character: Model): ()
 	if not character or not character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Hitbox") then
 		return
@@ -41,7 +56,7 @@ function Gun:CreateHitbox(character: Model): ()
 	hitbox.CanCollide = false
 	hitbox.Anchored = true
 	hitbox.Parent = character
-	hitbox:SetNetworkOwner(nil) -- Set to nil to allow server-side control
+	-- hitbox:SetNetworkOwner(nil) -- Set to nil to allow server-side control
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	local Humanoid = character:FindFirstChild("Humanoid")
@@ -60,22 +75,7 @@ function Gun:CreateHitbox(character: Model): ()
 	end)
 end
 
--- Create a new gun with characteristics
-function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
-	local self = {
-		range = range,
-		power = power,
-		weight = weight,
-		magSize = magSize,
-		roundsPerMinute = roundsPerMinute,
-	}
-
-	setmetatable(self, Gun)
-
-	return self
-end
-
-function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
+function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resistance: number): ()
 	if not Player.Character then
 		return
 	end
@@ -106,10 +106,11 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	end)
 
 	-- Perform the raycast
-	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.range, params)
+	print(currentGun)
+	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.range, params, resistance)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
-		if hitResult and hitResult ~= "hitResult: Timeout" then
+		if hitResult then
 			print("Hit detected:", hitResult.Instance:GetFullName())
 			local hitParent = FindFirstModelParent(hitResult.Instance)
 
@@ -117,22 +118,7 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 				hitParent.Humanoid:TakeDamage(currentGun.power)
 			end
 		end
-		if hitResult == "hitResult: Timeout" then
-			print("No hit detected")
-		end
 	end)
-
-	-- local RaycastResult = Workspace:Raycast(CameraCFrame.Position, LookVector * currentGun.range, params)
-
-	-- if not RaycastResult then
-	-- 	print("no player")
-	-- 	return
-	-- end
-
-	-- print("player")
-
-	-- -- Hurt ther hit player
-	-- FindFirstModelParent(RaycastResult.Instance):FindFirstChild("Humanoid"):TakeDamage(currentGun.power)
 
 	return
 end
