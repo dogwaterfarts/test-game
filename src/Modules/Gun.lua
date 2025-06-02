@@ -75,7 +75,7 @@ function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
 	return self
 end
 
-function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
+function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	if not Player.Character then
 		return
 	end

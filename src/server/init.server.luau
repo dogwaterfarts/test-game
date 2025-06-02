@@ -14,15 +14,19 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		return
 	end
 
-	if ... and Method == "Shoot" then
+	local args = { ... }
+
+	if args and Method == "Shoot" then
 		local Camera
-		for _, v in pairs(...) do
-			if v:IsA("CFrame") then
+		for _, v in pairs(args) do
+			if type(v) then
 				Camera = v
 			end
 		end
 
-		Gun.Shoot(PlayerGuns[player.UserId], player, Camera)
+		Gun:Shoot(PlayerGuns[player.UserId], player, Camera)
+		print("Shot fired with gun:", currentGun)
+		return
 	end
 
 	if Method == "ChangeGun" then
@@ -35,10 +39,13 @@ end)
 
 game.Players.PlayerAdded:Connect(function(Player)
 	Player.CharacterAdded:Connect(function(character)
+		PlayerGuns[Player.UserId] = PlayerGuns[Player.UserId] or {}
+		-- Initialize guns for the player
+
 		local Gun0 = Gun.new(100, 10, 5, 30, 600)
 		local Gun1 = Gun.new(1, 1, 1, 1, 1)
-		PlayerGuns[Player.UserId].Gun0 = Gun0
-		PlayerGuns[Player.UserId].Gun0 = Gun1
+		PlayerGuns[Player.UserId]["Gun0"] = Gun0
+		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
 		Gun:CreateHitbox(character)
 	end)
@@ -47,6 +54,10 @@ game.Players.PlayerAdded:Connect(function(Player)
 		local hitbox = character:FindFirstChild("Hitbox")
 		if hitbox then
 			hitbox:Destroy()
+		end
+
+		if PlayerGuns[Player.UserId] then
+			PlayerGuns[Player.UserId] = nil
 		end
 	end)
 end)
