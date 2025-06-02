@@ -76,6 +76,7 @@ function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
 end
 
 function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
+	print("Shooting with gun:", currentGun)
 	if not Player.Character then
 		return
 	end
@@ -133,6 +134,7 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string): ()
 end
 
 return Gun
+
 --[[
 	Module for Gun functionality.
 	Contains methods to create a gun and shoot it.

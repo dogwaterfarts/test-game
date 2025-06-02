@@ -24,7 +24,7 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 			end
 		end
 
-		Gun:Shoot(PlayerGuns[player.UserId], player, Camera)
+		Gun:Shoot(PlayerGuns[player.UserId][currentGun], player, Camera)
 		print("Shot fired with gun:", currentGun)
 		return
 	end
