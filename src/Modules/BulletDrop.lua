@@ -61,6 +61,7 @@ function Bullet:updateBullet(bullet, dt): ()
 	bullet.lifeTime += dt
 
 	if bullet.lifeTime > MAX_LIFETIME then
+		bullet.onHitEventObject.Event:Fire("hitResult: Timeout")
 		Bullet:destroyBullet(bullet)
 	end
 end

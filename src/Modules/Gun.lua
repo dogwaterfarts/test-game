@@ -109,13 +109,16 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.range, params)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
-		if hitResult then
+		if hitResult and hitResult ~= "hitResult: Timeout" then
 			print("Hit detected:", hitResult.Instance:GetFullName())
 			local hitParent = FindFirstModelParent(hitResult.Instance)
 
 			if hitParent and hitParent:FindFirstChild("Humanoid") then
 				hitParent.Humanoid:TakeDamage(currentGun.power)
 			end
+		end
+		if hitResult == "hitResult: Timeout" then
+			print("No hit detected")
 		end
 	end)
 
