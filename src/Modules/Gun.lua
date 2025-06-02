@@ -122,6 +122,16 @@ function Gun.Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame): ()
 	return
 end
 
+function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string): ()
+	if not playerGuns[gunName] then
+		error("Gun not found: " .. gunName)
+	end
+
+	local currentGun = playerGuns[gunName]
+	print("Changed to gun:", gunName, "with range:", currentGun.range, "and power:", currentGun.power)
+	return currentGun
+end
+
 return Gun
 --[[
 	Module for Gun functionality.
