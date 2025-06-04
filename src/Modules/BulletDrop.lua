@@ -11,11 +11,16 @@ export type BulletObject = typeof({} :: {
 	gravity: Vector3,
 	airResistance: number,
 	params: RaycastParams,
+	updateConnection: RBXScriptConnection,
 })
 
-local MAX_LIFETIME = 4 --seconds
+local MAX_LIFETIME = 12 --seconds
 local GRAVITY = Vector3.new(0, -game.Workspace.Gravity, 0)
 -- local HIT_DETECT_RAYCAST_PARAMS = RaycastParams.new() --Set this up how you want it
+
+-- local dragCoefficient = 0.47 -- Sphere, adjust as needed
+-- local airDensity = 1.225 -- kg/m^3 at sea level
+-- local bulletArea = math.pi * (0.005 ^ 2) -- Example: 1cm radius bullet
 
 function Bullet:newBullet(
 	startPosition: Vector3,
@@ -27,13 +32,23 @@ function Bullet:newBullet(
 	local onHitEventObject = Instance.new("BindableEvent")
 	local onTimeoutEventObject = Instance.new("BindableEvent")
 
+	if not workspace:FindFirstChild("BulletPath") then
+		local bulletPath = Instance.new("Folder")
+		bulletPath.Name = "BulletPath"
+		bulletPath.Parent = workspace
+	end
+
+	if not resistance then
+		resistance = 0.5
+	end
+
 	local bullet = {
 		position = startPosition,
 		velocity = startVelocity,
 		onHit = onHitEventObject,
 		onTimeout = onTimeoutEventObject,
 		gravity = GRAVITY,
-		airResistance = resistance,
+		airResistance = math.exp(resistance), -- Use a default value if resistance is not provided
 		lifeTime = 0,
 		params = params,
 	}
@@ -53,22 +68,40 @@ function Bullet:updateBullet(bullet, dt): ()
 
 	local newPart = Instance.new("Part")
 	newPart.Size = Vector3.new(1, 1, 1)
-	newPart.Parent = workspace
+	newPart.Parent = workspace.BulletPath
 	newPart.Color = Color3.new(1, 0, 0)
 	newPart.Anchored = true
 	newPart.Position = newPosition
 	newPart.CanCollide = false
 
 	bullet.position = newPosition
-	bullet.velocity = bullet.velocity + bullet.gravity * dt - bullet.velocity * bullet.airResistance * dt
+	-- -- Apply drag (air resistance) using a simple linear drag model: F_drag = -k * v
+	-- -- More accurate drag: F_drag = -0.5 * C_d * rho * A * v^2 * v_unit
+	-- -- For simplicity, we'll use linear drag here, but you can replace with quadratic drag if needed.
+
+	-- -- Linear drag:
+	-- local dragForce = -bullet.airResistance * bullet.velocity
+	-- bullet.velocity = bullet.velocity + dragForce * dt
+
+	-- Calculated velocity where the bullet decelerates over time due to air resistance with respect to its velocity:
+	bullet.velocity = bullet.velocity
+		+ bullet.gravity * dt
+		- bullet.velocity * math.exp(-bullet.airResistance * dt) * dt
+
+	-- Quadratic drag (more realistic for bullets):
+	-- local v = bullet.velocity.Magnitude
+	-- local dragForceMag = 0.5 * dragCoefficient * airDensity * bulletArea * v * v
+	-- local dragForce = -dragForceMag * bullet.velocity.Unit
+	-- bullet.velocity = bullet.velocity + bullet.gravity * dt + (dragForce * bullet.velocity.Magnitude / 2) * dt
+	-- print(dragForce)
 
 	--Check if the bullet hit something
 	local hitResult = Bullet:hitDetect(bullet, oldPosition, newPosition)
 
-	--if bullet.position.Y < -10 then
-	--	Bullet:destroyBullet()
-	--	return
-	--end
+	if bullet.position.Y < -10 then
+		Bullet:destroyBullet(bullet)
+		return
+	end
 
 	if hitResult then
 		bullet.onHit:Fire(hitResult)
@@ -91,7 +124,7 @@ function Bullet:hitDetect(bullet, pointFrom, pointTo)
 	return game.Workspace:Raycast(pointFrom, pointTo - pointFrom, bullet.params)
 end
 
-function Bullet:destroyBullet(bullet)
+function Bullet:destroyBullet(bullet: BulletObject): ()
 	--Removed references to allow garbage collection
 	bullet.onHit:Destroy() --Allows BindableEvent to be GC'ed, and breaks any connections to it
 	bullet.onTimeout:Destroy() --Same
@@ -99,3 +132,12 @@ function Bullet:destroyBullet(bullet)
 end
 
 return Bullet
+--[[
+	Module for creating and managing bullets in a game.
+	Handles bullet physics, hit detection, and lifetime management.
+	
+	Usage:
+		local Bullet = require(path.to.Bullet)
+		local newBullet = Bullet:newBullet(startPosition, startVelocity, params, resistance)
+		newBullet.onHit.Event:Connect(function(hitResult) ... end)
+]]

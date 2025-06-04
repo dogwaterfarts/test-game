@@ -6,7 +6,7 @@ local Waiting = {}
 
 export type Gun = typeof(setmetatable(
 	{} :: {
-		range: number,
+		initVelocity: number,
 		power: number,
 		weight: number,
 		magSize: number,
@@ -29,9 +29,9 @@ local function FindFirstModelParent(item)
 end
 
 -- Create a new gun with characteristics
-function Gun.new(range, power, weight, magSize, roundsPerMinute): Gun
+function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute): Gun
 	local self = {
-		range = range,
+		initVelocity = initVelocity,
 		power = power,
 		weight = weight,
 		magSize = magSize,
@@ -99,6 +99,7 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params:AddToFilter(Characters)
+	params:AddToFilter(workspace.Baseplate) -- Include the Baseplate
 
 	Waiting[Player.UserId] = true
 	task.delay(60 / currentGun.roundsPerMinute, function()
@@ -107,11 +108,17 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 
 	-- Perform the raycast
 	print(currentGun)
-	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.range, params, resistance)
+	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.initVelocity, params, resistance)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
 		if hitResult then
 			print("Hit detected:", hitResult.Instance:GetFullName())
+			if hitResult.Instance == workspace.Baseplate then
+				print("Hit the ground") -- Change color to indicate hit
+				local distance = (hitResult.Position - CameraCFrame.Position).Magnitude
+				print("Distance to hit:", distance)
+			end
+
 			local hitParent = FindFirstModelParent(hitResult.Instance)
 
 			if hitParent and hitParent:FindFirstChild("Humanoid") then
@@ -129,7 +136,7 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string): ()
 	end
 
 	local currentGun = playerGuns[gunName]
-	print("Changed to gun:", gunName, "with range:", currentGun.range, "and power:", currentGun.power)
+	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
 	return currentGun
 end
 
