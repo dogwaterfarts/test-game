@@ -1,6 +1,8 @@
 local Bullet = {}
 Bullet._index = Bullet
+local CollectionService = game:GetService("CollectionService")
 local RunS = game:GetService("RunService")
+local BulletPenetration = require(script.Parent.BulletPenetration)
 
 export type BulletObject = typeof({} :: {
 	position: Vector3,
@@ -38,6 +40,10 @@ function Bullet:newBullet(
 		bulletPath.Parent = workspace
 	end
 
+	local wallParams = RaycastParams.new()
+	wallParams.FilterType = Enum.RaycastFilterType.Include
+	wallParams:AddToFilter(CollectionService:GetTagged("Wall") or {})
+
 	if not resistance then
 		resistance = 0.5
 	end
@@ -51,6 +57,7 @@ function Bullet:newBullet(
 		airResistance = math.exp(resistance), -- Use a default value if resistance is not provided
 		lifeTime = 0,
 		params = params,
+		wallParams = wallParams,
 	}
 
 	bullet.updateConnection = RunS.Heartbeat:Connect(function(dt)
@@ -121,6 +128,15 @@ function Bullet:updateBullet(bullet, dt): ()
 end
 
 function Bullet:hitDetect(bullet, pointFrom, pointTo)
+	local raycastResult = workspace:Raycast(pointFrom, pointTo - pointFrom, bullet.wallParams)
+
+	if raycastResult and raycastResult.Instance.CanCollide then
+		print("Raycast result:", raycastResult)
+		local distance = BulletPenetration:PenetrationDistance(raycastResult, bullet.velocity.Unit)
+
+		print(distance)
+	end
+
 	return game.Workspace:Raycast(pointFrom, pointTo - pointFrom, bullet.params)
 end
 
