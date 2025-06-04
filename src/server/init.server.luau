@@ -48,7 +48,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1000, 10, 5, 30, 600, 0.5, 20) -- Example parameters
+		local Gun0 = Gun.new(1000, 10, 5, 30, 600, 0.5, 8) -- Example parameters
 		local Gun1 = Gun.new(1, 1, 1, 1, 1, 1, 1)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1

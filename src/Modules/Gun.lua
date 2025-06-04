@@ -12,6 +12,7 @@ export type Gun = typeof(setmetatable(
 		magSize: number,
 		roundsPerMinute: number,
 		caliber: number,
+		weightPerRound: number,
 	},
 	Gun
 ))
@@ -38,7 +39,7 @@ function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber,
 		magSize = magSize,
 		roundsPerMinute = roundsPerMinute,
 		caliber = caliber or 0.01, -- Default caliber if not provided
-		weightPerRound = weightPerRound or 0.01, -- Default weight per round if not provided
+		weightPerRound = weightPerRound or 100, -- Default weight per round if not provided
 	}
 
 	setmetatable(self, Gun)
@@ -111,7 +112,13 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 
 	-- Perform the raycast
 	print(currentGun)
-	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.initVelocity, params, resistance)
+	local bullet = Bullet:newBullet(
+		CameraCFrame.Position,
+		LookVector * currentGun.initVelocity,
+		currentGun[Player.UserId].weightPerRound,
+		params,
+		resistance
+	)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
 		if hitResult then
