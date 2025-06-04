@@ -1,7 +1,7 @@
 local BulletPenetration = {}
 BulletPenetration.__index = BulletPenetration
 
-function BulletPenetration:PenetrationDistance(hit: RaycastResult, direction: Vector3)
+function BulletPenetration:PenetrationDistance(bullet, hit: RaycastResult, direction: Vector3)
 	local newRayOrigin = hit.Position + (direction * 10000) / 2
 	local newDirection = -direction * 10000
 
@@ -13,10 +13,15 @@ function BulletPenetration:PenetrationDistance(hit: RaycastResult, direction: Ve
 
 	if raycastResult then
 		local distance = (raycastResult.Position - hit.Position).Magnitude
-		return distance
+		self:AdjustBulletProperties(bullet, distance)
 	end
 
 	return 0
+end
+
+function BulletPenetration:AdjustBulletProperties(bullet, distance)
+	local changeInVelocity = bullet.velocity * (1 - distance * bullet.weightPerRound / 1000) -- Example adjustment
+	return changeInVelocity
 end
 
 return BulletPenetration

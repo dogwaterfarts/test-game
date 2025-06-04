@@ -132,7 +132,7 @@ function Bullet:hitDetect(bullet, pointFrom, pointTo)
 
 	if raycastResult and raycastResult.Instance.CanCollide then
 		print("Raycast result:", raycastResult)
-		local distance = BulletPenetration:PenetrationDistance(raycastResult, bullet.velocity.Unit)
+		local distance = BulletPenetration:PenetrationDistance(bullet, raycastResult, bullet.velocity.Unit)
 
 		print(distance)
 	end

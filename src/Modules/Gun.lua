@@ -11,6 +11,7 @@ export type Gun = typeof(setmetatable(
 		weight: number,
 		magSize: number,
 		roundsPerMinute: number,
+		caliber: number,
 	},
 	Gun
 ))
@@ -29,13 +30,15 @@ local function FindFirstModelParent(item)
 end
 
 -- Create a new gun with characteristics
-function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute): Gun
+function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber, weightPerRound): Gun
 	local self = {
 		initVelocity = initVelocity,
 		power = power,
 		weight = weight,
 		magSize = magSize,
 		roundsPerMinute = roundsPerMinute,
+		caliber = caliber or 0.01, -- Default caliber if not provided
+		weightPerRound = weightPerRound or 0.01, -- Default weight per round if not provided
 	}
 
 	setmetatable(self, Gun)
