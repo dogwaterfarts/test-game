@@ -43,7 +43,7 @@ end
 function BulletPenetration:AdjustBulletProperties(bullet, distance)
 	print(distance)
 	local canPass = true
-	local changeInVelocity = bullet.velocity * math.exp(440 * (1 - distance) / bullet.weight) -- Example adjustment
+	local changeInVelocity = bullet.velocity * math.exp(540 * (1 - distance) / bullet.weight) -- Example adjustment
 	if changeInVelocity.Magnitude < 5 then
 		changeInVelocity = Vector3.new(0, 0, 0)
 		canPass = false

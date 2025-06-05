@@ -110,6 +110,7 @@ function Bullet:updateBullet(bullet, dt): ()
 	local hitResult = Bullet:hitDetect(bullet, oldPosition, newPosition, dt)
 
 	if bullet.position.Y < -10 then
+		bullet.onHit:Fire(newPosition)
 		Bullet:destroyBullet(bullet)
 		return
 	end
@@ -125,7 +126,7 @@ function Bullet:updateBullet(bullet, dt): ()
 	bullet.lifeTime += dt
 
 	if bullet.lifeTime > MAX_LIFETIME then
-		bullet.onHit:Fire()
+		bullet.onHit:Fire(newPosition)
 		Bullet:destroyBullet(bullet)
 		return
 	end
