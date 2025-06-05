@@ -11,6 +11,8 @@ export type Gun = typeof(setmetatable(
 		weight: number,
 		magSize: number,
 		roundsPerMinute: number,
+		caliber: number,
+		weightPerRound: number,
 	},
 	Gun
 ))
@@ -29,13 +31,15 @@ local function FindFirstModelParent(item)
 end
 
 -- Create a new gun with characteristics
-function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute): Gun
+function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber, weightPerRound): Gun
 	local self = {
 		initVelocity = initVelocity,
 		power = power,
 		weight = weight,
 		magSize = magSize,
 		roundsPerMinute = roundsPerMinute,
+		caliber = caliber or 0.01, -- Default caliber if not provided
+		weightPerRound = weightPerRound or 100, -- Default weight per round if not provided
 	}
 
 	setmetatable(self, Gun)
@@ -108,9 +112,23 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 
 	-- Perform the raycast
 	print(currentGun)
-	local bullet = Bullet:newBullet(CameraCFrame.Position, LookVector * currentGun.initVelocity, params, resistance)
+	local bullet = Bullet:newBullet(
+		CameraCFrame.Position,
+		LookVector * currentGun.initVelocity,
+		currentGun.weightPerRound,
+		params,
+		resistance
+	)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
+		if typeof(hitResult) == "Vector3" then
+			local HRP = Player.Character:FindFirstChild("HumanoidRootPart")
+			local newHitPosition = Vector3.new(hitResult.X, HRP.Position.Y, hitResult.Z)
+			local distance = (newHitPosition - CameraCFrame.Position).Magnitude
+			print(distance)
+			return
+		end
+
 		if hitResult then
 			print("Hit detected:", hitResult.Instance:GetFullName())
 			if hitResult.Instance == workspace.Baseplate then
@@ -130,14 +148,29 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 	return
 end
 
-function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string): ()
+function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: Player): ()
 	if not playerGuns[gunName] then
 		error("Gun not found: " .. gunName)
 	end
 
 	local currentGun = playerGuns[gunName]
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
+	Gun:ChangeWalkspeed(currentGun, player)
 	return currentGun
+end
+
+function Gun:ChangeWalkspeed(currentGun: Gun, Player: Player): ()
+	local weight = currentGun.weight
+
+	if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
+		return
+	end
+
+	local humanoid = Player.Character:FindFirstChild("Humanoid")
+	if humanoid then
+		local newWalkSpeed = 16 * math.exp(-0.5 * weight / 70) -- Example calculation for walk speed based on weight
+		humanoid.WalkSpeed = math.clamp(newWalkSpeed, 8, 16) -- Ensure walk speed is within a reasonable range
+	end
 end
 
 return Gun
@@ -147,21 +180,29 @@ return Gun
 	Contains methods to create a gun and shoot it.
 	Handles raycasting to detect hits on players.
 ]]
---
--- Usage:
--- local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- local Gun = require(ReplicatedStorage.Modules.Gun)
--- Create a new gun instance with specified parameters:
--- local myGun = Gun.new(100, 10, 5, 30, 600)
 
--- Create a hitbox for the player's character when they join:
--- game.Players.PlayerAdded:Connect(function(player)
---     player.CharacterAdded:Connect(function(character)
---         Gun:CreateHitbox(character)
---     end)
--- end)
-
--- To shoot the gun, call the Shoot method with the player and camera CFrame:
--- local player = game.Players.LocalPlayer
--- local cameraCFrame = workspace.CurrentCamera.CFrame
--- Gun.Shoot(myGun, player, cameraCFrame)
+--[[
+	Usage:
+	local Gun = require(script.Parent.Gun)
+	local myGun = Gun.new(1500, 10, 5, 30, 600, 0.5, 750)
+	myGun:CreateHitbox(player.Character)
+	myGun:Shoot(player, cameraCFrame)
+	myGun:ChangeGun(playerGuns, "Gun1")
+]]
+--[[
+	Notes:
+	- The gun's characteristics can be adjusted based on game requirements.
+	- The raycasting logic can be extended to include more complex hit detection.
+	- Ensure that the hitbox is properly set up in the player's character model.
+	- The `Waiting` table prevents rapid firing of the gun.
+]]
+--[[
+	- The `Characters` table is used to filter raycasts to only hit other players.
+	- The `FindFirstModelParent` function is used to find the parent model of a hit instance.
+	- The `onHit` event is used to handle bullet hit detection and apply damage.
+]]
+--[[
+	- The `CreateHitbox` function creates a hitbox for the player character to detect hits.
+	- The `Shoot` function handles the shooting logic, including raycasting and hit detection.
+	- The `ChangeGun` function allows switching between different guns for the player.
+]]

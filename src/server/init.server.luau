@@ -38,7 +38,7 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		local gunName = 1 - currentGun[player.UserId]:sub(-1) -- Toggle between Gun0 and Gun1
 		currentGun[player.UserId] = "Gun" .. gunName
 
-		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId])
+		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player)
 	end
 end)
 
@@ -48,12 +48,14 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1000, 10, 5, 30, 600)
-		local Gun1 = Gun.new(1, 1, 1, 1, 1)
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750) -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
-		currentGun[Player.UserId] = "Gun0" -- Set the initial gun
+		currentGun[Player.UserId] = "Gun0"
+
+		print(currentGun, PlayerGuns) -- Set the initial gun
 
 		Gun:CreateHitbox(character)
 	end)
@@ -66,6 +68,22 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		if PlayerGuns[Player.UserId] then
 			PlayerGuns[Player.UserId] = nil
+		end
+	end)
+
+	Player.Chatted:Connect(function(message)
+		if not tonumber(message) then
+			return
+		end
+		print(message)
+
+		local gunVelocity = tonumber(message)
+
+		if PlayerGuns[Player.UserId][currentGun[Player.UserId]] then
+			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750) -- Example parameters
+			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
+
+			Gun:ChangeGun(PlayerGuns[Player.UserId], currentGun[Player.UserId], Player)
 		end
 	end)
 end)

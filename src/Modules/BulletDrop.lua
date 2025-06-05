@@ -1,6 +1,8 @@
 local Bullet = {}
 Bullet._index = Bullet
+local CollectionService = game:GetService("CollectionService")
 local RunS = game:GetService("RunService")
+local BulletPenetration = require(script.Parent.BulletPenetration)
 
 export type BulletObject = typeof({} :: {
 	position: Vector3,
@@ -11,6 +13,8 @@ export type BulletObject = typeof({} :: {
 	gravity: Vector3,
 	airResistance: number,
 	params: RaycastParams,
+	weight: number,
+	wallParams: RaycastParams,
 	updateConnection: RBXScriptConnection,
 })
 
@@ -25,6 +29,7 @@ local GRAVITY = Vector3.new(0, -game.Workspace.Gravity, 0)
 function Bullet:newBullet(
 	startPosition: Vector3,
 	startVelocity: Vector3,
+	weight: number,
 	params: RaycastParams,
 	resistance: number
 ): BulletObject
@@ -37,6 +42,10 @@ function Bullet:newBullet(
 		bulletPath.Name = "BulletPath"
 		bulletPath.Parent = workspace
 	end
+
+	local wallParams = RaycastParams.new()
+	wallParams.FilterType = Enum.RaycastFilterType.Include
+	wallParams:AddToFilter(CollectionService:GetTagged("Wall") or {})
 
 	if not resistance then
 		resistance = 0.5
@@ -51,6 +60,8 @@ function Bullet:newBullet(
 		airResistance = math.exp(resistance), -- Use a default value if resistance is not provided
 		lifeTime = 0,
 		params = params,
+		weight = weight or 20, -- Default weight if not provided
+		wallParams = wallParams,
 	}
 
 	bullet.updateConnection = RunS.Heartbeat:Connect(function(dt)
@@ -96,9 +107,10 @@ function Bullet:updateBullet(bullet, dt): ()
 	-- print(dragForce)
 
 	--Check if the bullet hit something
-	local hitResult = Bullet:hitDetect(bullet, oldPosition, newPosition)
+	local hitResult = Bullet:hitDetect(bullet, oldPosition, newPosition, dt)
 
 	if bullet.position.Y < -10 then
+		bullet.onHit:Fire(newPosition)
 		Bullet:destroyBullet(bullet)
 		return
 	end
@@ -114,13 +126,41 @@ function Bullet:updateBullet(bullet, dt): ()
 	bullet.lifeTime += dt
 
 	if bullet.lifeTime > MAX_LIFETIME then
-		bullet.onHit:Fire()
+		bullet.onHit:Fire(newPosition)
 		Bullet:destroyBullet(bullet)
 		return
 	end
 end
 
-function Bullet:hitDetect(bullet, pointFrom, pointTo)
+function Bullet:hitDetect(bullet, pointFrom, pointTo, dt)
+	local raycastResult = workspace:Raycast(pointFrom, pointTo - pointFrom, bullet.wallParams)
+	local canPass
+
+	if raycastResult and raycastResult.Instance.CanCollide then
+		print("Raycast result:", raycastResult)
+		local penetrationResult = BulletPenetration:Penetrate(bullet, raycastResult, bullet.velocity.Unit)
+
+		if not penetrationResult.canPass then
+			Bullet:destroyBullet(bullet)
+			canPass = false
+			return nil
+		end
+
+		if penetrationResult.newVelocity and penetrationResult.canPass then
+			bullet.velocity = penetrationResult.newVelocity
+			bullet.position = penetrationResult.hitPosition
+			pointFrom = penetrationResult.hitPosition
+			pointTo = pointFrom + bullet.velocity * dt
+			canPass = true
+		end
+
+		print(penetrationResult.canPass)
+	end
+
+	if not canPass then
+		return nil
+	end
+
 	return game.Workspace:Raycast(pointFrom, pointTo - pointFrom, bullet.params)
 end
 
