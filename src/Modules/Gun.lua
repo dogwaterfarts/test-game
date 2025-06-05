@@ -148,14 +148,29 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 	return
 end
 
-function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string): ()
+function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: Player): ()
 	if not playerGuns[gunName] then
 		error("Gun not found: " .. gunName)
 	end
 
 	local currentGun = playerGuns[gunName]
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
+	Gun:ChangeWalkspeed(currentGun, player)
 	return currentGun
+end
+
+function Gun:ChangeWalkspeed(currentGun: Gun, Player: Player): ()
+	local weight = currentGun.weight
+
+	if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
+		return
+	end
+
+	local humanoid = Player.Character:FindFirstChild("Humanoid")
+	if humanoid then
+		local newWalkSpeed = 16 * math.exp(-0.5 * weight / 70) -- Example calculation for walk speed based on weight
+		humanoid.WalkSpeed = math.clamp(newWalkSpeed, 8, 16) -- Ensure walk speed is within a reasonable range
+	end
 end
 
 return Gun
