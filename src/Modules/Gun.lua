@@ -152,8 +152,9 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: P
 	if not playerGuns[gunName] then
 		error("Gun not found: " .. gunName)
 	end
-
 	local currentGun = playerGuns[gunName]
+
+	local timeDelay = math.exp(currentGun.weight / 70)
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
 	Gun:ChangeWalkspeed(currentGun, player)
 	return currentGun
