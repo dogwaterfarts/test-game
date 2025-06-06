@@ -1,6 +1,7 @@
 local PlayerControls = require(script.Parent.PlayerControls) -- Assuming PlayerControls is in the same directory
 local Bullet = require(script.Parent.BulletDrop) -- Assuming Bullet is in the same directory
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local userInputService = game:GetService("UserInputService")
 local UserGameSettings = UserSettings():GetService("UserGameSettings")
 
@@ -169,6 +170,7 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: P
 	wait(timeDelay)
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
 	Gun:ChangeCharMovement(currentGun, player)
+	ReplicatedStorage.Remotes.test:FireClient(player)
 	return currentGun
 end
 
@@ -193,10 +195,15 @@ function Gun:ChangeCharMovement(currentGun: Gun, Player: Player): ()
 	-- Reload player controls to apply changes
 end
 
-function Gun:Zoom(player: Player, camera: Camera, gun: Gun): ()
+function Gun:Zoom(player: Player, camera: Camera, gun: Gun, ...): ()
 	if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
 		return
 	end
+	print("boo")
+
+	local args = { ... }
+
+	print(player.UserId, Zooming[player.UserId], connections[player.UserId])
 
 	if Zooming[player.UserId] then
 		print("Already zoomed in, toggling zoom out.")
@@ -214,23 +221,27 @@ function Gun:Zoom(player: Player, camera: Camera, gun: Gun): ()
 		return
 	end
 
-	-- Adjust the camera's CFrame for zooming
-	local tween = game:GetService("TweenService"):Create(
-		camera,
-		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ FieldOfView = camera.FieldOfView / gun.magnification } -- Reset to default FOV
-	)
-	tween:Play()
-	tween.Completed:Wait()
-	Zooming[player.UserId] = true
+	if not args[1] then
+		-- Adjust the camera's CFrame for zooming
+		local tween = game:GetService("TweenService"):Create(
+			camera,
+			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ FieldOfView = camera.FieldOfView / gun.magnification } -- Reset to default FOV
+		)
+		tween:Play()
+		tween.Completed:Wait()
+		Zooming[player.UserId] = true
 
-	local mouseDeltaSensitivity = (1 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
-	userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
-
-	connections[player.UserId] = UserGameSettings:GetPropertyChangedSignal("MouseSensitivity"):Connect(function()
-		mouseDeltaSensitivity = (1 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
+		local mouseDeltaSensitivity = (2 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
 		userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
-	end)
+
+		connections[player.UserId] = UserGameSettings:GetPropertyChangedSignal("MouseSensitivity"):Connect(function()
+			mouseDeltaSensitivity = (2 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
+			userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
+		end)
+		return
+	end
+	return
 end
 
 return Gun

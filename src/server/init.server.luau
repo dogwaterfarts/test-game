@@ -45,6 +45,16 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 	if Method == "ToggleSprint" then
 		PlayerControls:Sprint(player, false)
 	end
+
+	if Method == "Zoom" and args then
+		local Camera
+		for _, v in pairs(args) do
+			if typeof(v) == "Instance" and v:IsA("Camera") then
+				Camera = v
+			end
+		end -- Assuming the first argument is the camera
+		Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]])
+	end
 end)
 
 ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player)
@@ -99,7 +109,12 @@ game.Players.PlayerAdded:Connect(function(Player)
 			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750) -- Example parameters
 			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
 
-			Gun:ChangeGun(PlayerGuns[Player.UserId], currentGun[Player.UserId], Player)
+			Gun:ChangeGun(
+				PlayerGuns[Player.UserId],
+				currentGun[Player.UserId],
+				Player,
+				ReplicatedStorage.Remotes.GetCurrentGun:InvokeServer()
+			)
 		end
 	end)
 end)

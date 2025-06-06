@@ -20,5 +20,23 @@ UserInputService.InputBegan:Connect(function(key)
 
 		print(playerGun)
 		Gun:Zoom(game.Players.LocalPlayer, Camera, playerGun)
+		-- ReplicatedStorage.Remotes.test:FireServer("Zoom", workspace.CurrentCamera)
 	end
+end)
+
+ReplicatedStorage.Remotes.GetCurrentGun.OnClientInvoke = function()
+	return workspace.CurrentCamera
+end
+
+ReplicatedStorage.Remotes.test.OnClientEvent:Connect(function()
+	local playerGun = ReplicatedStorage.Remotes.GetCurrentGun:InvokeServer()
+	if not playerGun then
+		print("No gun found for the player.")
+		return
+	end
+
+	local Camera = workspace.CurrentCamera
+
+	print(playerGun)
+	Gun:Zoom(game.Players.LocalPlayer, Camera, playerGun)
 end)
