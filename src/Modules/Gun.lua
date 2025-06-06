@@ -170,7 +170,7 @@ function Gun:ChangeWalkspeed(currentGun: Gun, Player: Player): ()
 
 	local humanoid = Player.Character:FindFirstChild("Humanoid")
 	if humanoid then
-		local newWalkSpeed = 16 * math.exp(-0.5 * weight / 70) -- Example calculation for walk speed based on weight
+		local newWalkSpeed = 16 * math.exp(-2 * weight / 70) -- Example calculation for walk speed based on weight
 		humanoid.WalkSpeed = math.clamp(newWalkSpeed, 8, 16) -- Ensure walk speed is within a reasonable range
 	end
 end
