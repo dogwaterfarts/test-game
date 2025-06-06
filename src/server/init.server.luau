@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerControls = require(ReplicatedStorage.Modules.PlayerControls)
 local Gun = require(ReplicatedStorage.Modules.Gun)
 
 local currentGun = {} -- Initialize currentGun to an empty table
@@ -40,6 +41,10 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 
 		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player)
 	end
+
+	if Method == "ToggleSprint" then
+		PlayerControls:Sprint(player, false)
+	end
 end)
 
 game.Players.PlayerAdded:Connect(function(Player)
@@ -48,8 +53,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750) -- Example parameters
-		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1)
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3) -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
@@ -58,6 +63,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 		print(currentGun, PlayerGuns) -- Set the initial gun
 
 		Gun:CreateHitbox(character)
+		PlayerControls.Load(Player)
+		Gun:ChangeCharMovement(PlayerGuns[Player.UserId][currentGun[Player.UserId]], Player)
 	end)
 
 	Player.CharacterRemoving:Connect(function(character)
@@ -68,7 +75,10 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		if PlayerGuns[Player.UserId] then
 			PlayerGuns[Player.UserId] = nil
+			currentGun[Player.UserId] = nil
 		end
+
+		PlayerControls.Remove(Player)
 	end)
 
 	Player.Chatted:Connect(function(message)

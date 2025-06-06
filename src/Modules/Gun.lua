@@ -1,3 +1,4 @@
+local PlayerControls = require(script.Parent.PlayerControls) -- Assuming PlayerControls is in the same directory
 local Bullet = require(script.Parent.BulletDrop) -- Assuming Bullet is in the same directory
 local Gun = {}
 Gun._index = Gun
@@ -31,7 +32,7 @@ local function FindFirstModelParent(item)
 end
 
 -- Create a new gun with characteristics
-function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber, weightPerRound): Gun
+function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber, weightPerRound, magnification): Gun
 	local self = {
 		initVelocity = initVelocity,
 		power = power,
@@ -39,7 +40,8 @@ function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber,
 		magSize = magSize,
 		roundsPerMinute = roundsPerMinute,
 		caliber = caliber or 0.01, -- Default caliber if not provided
-		weightPerRound = weightPerRound or 100, -- Default weight per round if not provided
+		weightPerRound = weightPerRound or 100,
+		magnification = magnification, -- Default weight per round if not provided
 	}
 
 	setmetatable(self, Gun)
@@ -153,15 +155,16 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: P
 		error("Gun not found: " .. gunName)
 	end
 	local currentGun = playerGuns[gunName]
+	print(currentGun)
 
 	local timeDelay = math.exp(currentGun.weight / 70)
 	wait(timeDelay)
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
-	Gun:ChangeWalkspeed(currentGun, player)
+	Gun:ChangeCharMovement(currentGun, player)
 	return currentGun
 end
 
-function Gun:ChangeWalkspeed(currentGun: Gun, Player: Player): ()
+function Gun:ChangeCharMovement(currentGun: Gun, Player: Player): ()
 	local weight = currentGun.weight
 
 	if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
@@ -170,9 +173,16 @@ function Gun:ChangeWalkspeed(currentGun: Gun, Player: Player): ()
 
 	local humanoid = Player.Character:FindFirstChild("Humanoid")
 	if humanoid then
-		local newWalkSpeed = 16 * math.exp(-2 * weight / 70) -- Example calculation for walk speed based on weight
-		humanoid.WalkSpeed = math.clamp(newWalkSpeed, 8, 16) -- Ensure walk speed is within a reasonable range
+		local newArgument = 0.2 * (weight - 6)
+
+		local newWalkSpeed = 12 - 7.5 * math.atan(newArgument)
+		print(newWalkSpeed)
+		humanoid.WalkSpeed = newWalkSpeed
+		print("Walk speed set to:", humanoid.WalkSpeed)
+
+		PlayerControls:Sprint(Player, true)
 	end
+	-- Reload player controls to apply changes
 end
 
 return Gun
