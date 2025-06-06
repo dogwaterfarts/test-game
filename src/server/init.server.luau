@@ -47,6 +47,12 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 	end
 end)
 
+ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player)
+	print(PlayerGuns[player.UserId][currentGun[player.UserId]])
+
+	return PlayerGuns[player.UserId][currentGun[player.UserId]]
+end
+
 game.Players.PlayerAdded:Connect(function(Player)
 	Player.CharacterAdded:Connect(function(character)
 		PlayerGuns[Player.UserId] = {}

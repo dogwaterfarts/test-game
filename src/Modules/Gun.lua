@@ -1,9 +1,16 @@
 local PlayerControls = require(script.Parent.PlayerControls) -- Assuming PlayerControls is in the same directory
 local Bullet = require(script.Parent.BulletDrop) -- Assuming Bullet is in the same directory
+
+local userInputService = game:GetService("UserInputService")
+local UserGameSettings = UserSettings():GetService("UserGameSettings")
+
 local Gun = {}
 Gun._index = Gun
+
 local Characters = {}
 local Waiting = {}
+local Zooming = {}
+local connections = {}
 
 export type Gun = typeof(setmetatable(
 	{} :: {
@@ -14,6 +21,7 @@ export type Gun = typeof(setmetatable(
 		roundsPerMinute: number,
 		caliber: number,
 		weightPerRound: number,
+		magnification: number,
 	},
 	Gun
 ))
@@ -183,6 +191,46 @@ function Gun:ChangeCharMovement(currentGun: Gun, Player: Player): ()
 		PlayerControls:Sprint(Player, true)
 	end
 	-- Reload player controls to apply changes
+end
+
+function Gun:Zoom(player: Player, camera: Camera, gun: Gun): ()
+	if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+
+	if Zooming[player.UserId] then
+		print("Already zoomed in, toggling zoom out.")
+		Zooming[player.UserId] = false
+		connections[player.UserId]:Disconnect()
+
+		local tween = game:GetService("TweenService"):Create(
+			camera,
+			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ FieldOfView = 70 } -- Reset to default FOV
+		)
+		tween:Play()
+		tween.Completed:Wait()
+		userInputService.MouseDeltaSensitivity = 1 -- Reset mouse sensitivity
+		return
+	end
+
+	-- Adjust the camera's CFrame for zooming
+	local tween = game:GetService("TweenService"):Create(
+		camera,
+		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ FieldOfView = camera.FieldOfView / gun.magnification } -- Reset to default FOV
+	)
+	tween:Play()
+	tween.Completed:Wait()
+	Zooming[player.UserId] = true
+
+	local mouseDeltaSensitivity = (1 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
+	userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
+
+	connections[player.UserId] = UserGameSettings:GetPropertyChangedSignal("MouseSensitivity"):Connect(function()
+		mouseDeltaSensitivity = (1 / camera.FieldOfView) / UserGameSettings.MouseSensitivity
+		userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
+	end)
 end
 
 return Gun

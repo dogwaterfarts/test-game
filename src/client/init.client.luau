@@ -1,12 +1,24 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- Assuming PlayerControls is in the same directory
+local UserInputService = game:GetService("UserInputService")
+local Gun = require(ReplicatedStorage.Modules.Gun)
 
-game:GetService("UserInputService").InputBegan:Connect(function(key)
+UserInputService.InputBegan:Connect(function(key)
 	if key.KeyCode == Enum.KeyCode.Q then
 		ReplicatedStorage.Remotes.test:FireServer("Shoot", workspace.CurrentCamera.CFrame)
 	elseif key.KeyCode == Enum.KeyCode.E then
 		ReplicatedStorage.Remotes.test:FireServer("ChangeGun")
 	elseif key.KeyCode == Enum.KeyCode.LeftShift then
 		ReplicatedStorage.Remotes.test:FireServer("ToggleSprint", true)
+	elseif key.KeyCode == Enum.KeyCode.P or key.KeyCode == Enum.KeyCode.ButtonL2 then
+		local playerGun = ReplicatedStorage.Remotes.GetCurrentGun:InvokeServer()
+		if not playerGun then
+			print("No gun found for the player.")
+			return
+		end
+
+		local Camera = workspace.CurrentCamera
+
+		print(playerGun)
+		Gun:Zoom(game.Players.LocalPlayer, Camera, playerGun)
 	end
 end)
