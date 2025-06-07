@@ -35,11 +35,11 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		return
 	end
 
-	if Method == "ChangeGun" then
+	if Method == "ChangeGun" and args then
 		local gunName = 1 - currentGun[player.UserId]:sub(-1) -- Toggle between Gun0 and Gun1
 		currentGun[player.UserId] = "Gun" .. gunName
 
-		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player)
+		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player, args[1])
 	end
 
 	if Method == "ToggleSprint" then
@@ -48,12 +48,16 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 
 	if Method == "Zoom" and args then
 		local Camera
+		local input
 		for _, v in pairs(args) do
 			if typeof(v) == "Instance" and v:IsA("Camera") then
 				Camera = v
 			end
+			if typeof(v) == "InputObject" then
+				input = v
+			end
 		end -- Assuming the first argument is the camera
-		Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]])
+		Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]], input)
 	end
 end)
 
