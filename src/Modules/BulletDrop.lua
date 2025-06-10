@@ -1,5 +1,5 @@
 local Bullet = {}
-Bullet._index = Bullet
+Bullet.__index = Bullet
 local CollectionService = game:GetService("CollectionService")
 local RunS = game:GetService("RunService")
 local BulletPenetration = require(script.Parent.BulletPenetration)

@@ -12,27 +12,39 @@ function Controls.Load(Player: Player): ()
 	Sprinting[Player.UserId] = false
 end
 
-function Controls:Sprint(Player: Player, weaponChanging: boolean): ()
+function Controls:DisableSprint(Player: Player): ()
+	if Sprinting[Player.UserId] then
+		Sprinting[Player.UserId] = false
+		local currentCharacter = Player.Character
+		if currentCharacter and currentCharacter:FindFirstChild("Humanoid") then
+			local humanoid = currentCharacter.Humanoid
+			humanoid.WalkSpeed = humanoid.WalkSpeed / 1.6 -- Reset walk speed to normal
+		end
+	end
+end
+
+function Controls:Sprint(Player: Player, weaponChanging: boolean, toSprint: boolean): ()
 	local currentCharacter = Player.Character
 	if not currentCharacter or not currentCharacter:FindFirstChild("Humanoid") then
 		return
 	end
 
-	if weaponChanging and Sprinting[Player.UserId] == true then
+	if toSprint == false then
+		self:DisableSprint(Player)
+		return
+	end
+
+	if weaponChanging and Sprinting[Player.UserId] then
 		local humanoid = currentCharacter.Humanoid
 		humanoid.WalkSpeed = humanoid.WalkSpeed * 1.6
 		return
 	end
 
-	if Sprinting[Player.UserId] then
-		-- If already sprinting, stop sprinting
-		Sprinting[Player.UserId] = false
-		local humanoid = currentCharacter.Humanoid
-		humanoid.WalkSpeed = humanoid.WalkSpeed / 1.6 -- Reset walk speed to normal
+	if weaponChanging then
 		return
 	end
 
-	if not Sprinting[Player.UserId] then
+	if not Sprinting[Player.UserId] and toSprint then
 		-- If not sprinting, start sprinting
 		Sprinting[Player.UserId] = true
 

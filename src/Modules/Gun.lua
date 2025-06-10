@@ -1,20 +1,16 @@
 local PlayerControls = require(script.Parent.PlayerControls) -- Assuming PlayerControls is in the same directory
 local Bullet = require(script.Parent.BulletDrop) -- Assuming Bullet is in the same directory
--- local GamepadCamera = require(script.Parent.GamepadCamera) -- Assuming GamepadCamera is in the same directory
+local GamepadCamera = require(script.Parent.GamepadCamera) -- Assuming GamepadCamera is in the same directory
 
+local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local userInputService = game:GetService("UserInputService")
-local GamepadCamera = require(ReplicatedStorage.Modules.GamepadCamera) -- Assuming GamepadCamera is in the ReplicatedStorage")
+local userInputService = game:GetService("UserInputService") -- Assuming GamepadCamera is in the ReplicatedStorage")
 local UserGameSettings = UserSettings():GetService("UserGameSettings")
 
 local Gun = {}
-Gun._index = Gun
+Gun.__index = Gun
 
 local Characters = {}
-local Waiting = {}
-local Zooming = {}
-local connections = {}
-local controller = false
 
 export type Gun = typeof(setmetatable(
 	{} :: {
@@ -26,6 +22,9 @@ export type Gun = typeof(setmetatable(
 		caliber: number,
 		weightPerRound: number,
 		magnification: number,
+		onCooldown: boolean,
+		zoomActive: boolean,
+		connection: { [number]: RBXScriptConnection },
 	},
 	Gun
 ))
@@ -54,6 +53,9 @@ function Gun.new(initVelocity, power, weight, magSize, roundsPerMinute, caliber,
 		caliber = caliber or 0.01, -- Default caliber if not provided
 		weightPerRound = weightPerRound or 100,
 		magnification = magnification, -- Default weight per round if not provided
+		onCooldown = false,
+		zoomActive = false,
+		connection = nil,
 	}
 
 	setmetatable(self, Gun)
@@ -93,12 +95,12 @@ function Gun:CreateHitbox(character: Model): ()
 	end)
 end
 
-function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resistance: number): ()
+function Gun:Shoot(Player: Player, CameraCFrame: CFrame, resistance: number): ()
 	if not Player.Character then
 		return
 	end
 
-	if Waiting[Player.UserId] then
+	if self.onCooldown then
 		return
 	end
 
@@ -119,20 +121,15 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 	params:AddToFilter(Characters)
 	params:AddToFilter(workspace.Baseplate) -- Include the Baseplate
 
-	Waiting[Player.UserId] = true
-	task.delay(60 / currentGun.roundsPerMinute, function()
-		Waiting[Player.UserId] = false
+	self.onCooldown = true
+	task.delay(60 / self.roundsPerMinute, function()
+		self.onCooldown = false
 	end)
 
 	-- Perform the raycast
-	print(currentGun)
-	local bullet = Bullet:newBullet(
-		CameraCFrame.Position,
-		LookVector * currentGun.initVelocity,
-		currentGun.weightPerRound,
-		params,
-		resistance
-	)
+	print(self)
+	local bullet =
+		Bullet:newBullet(CameraCFrame.Position, LookVector * self.initVelocity, self.weightPerRound, params, resistance)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
 		if typeof(hitResult) == "Vector3" then
@@ -154,7 +151,7 @@ function Gun:Shoot(currentGun: Gun, Player: Player, CameraCFrame: CFrame, resist
 			local hitParent = FindFirstModelParent(hitResult.Instance)
 
 			if hitParent and hitParent:FindFirstChild("Humanoid") then
-				hitParent.Humanoid:TakeDamage(currentGun.power)
+				hitParent.Humanoid:TakeDamage(self.power)
 			end
 		end
 	end)
@@ -172,13 +169,13 @@ function Gun:ChangeGun(playerGuns: { [string]: Gun }, gunName: string, player: P
 	local timeDelay = math.exp(currentGun.weight / 70)
 	wait(timeDelay)
 	print("Changed to gun:", gunName, "with initial velocity:", currentGun.initVelocity, "and power:", currentGun.power)
-	Gun:ChangeCharMovement(currentGun, player)
+	currentGun:ChangeCharMovement(player)
 	ReplicatedStorage.Remotes.test:FireClient(player, input)
 	return currentGun
 end
 
-function Gun:ChangeCharMovement(currentGun: Gun, Player: Player): ()
-	local weight = currentGun.weight
+function Gun:ChangeCharMovement(Player: Player): ()
+	local weight = self.weight
 
 	if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
 		return
@@ -193,12 +190,13 @@ function Gun:ChangeCharMovement(currentGun: Gun, Player: Player): ()
 		humanoid.WalkSpeed = newWalkSpeed
 		print("Walk speed set to:", humanoid.WalkSpeed)
 
-		PlayerControls:Sprint(Player, true)
+		-- PlayerControls:Sprint(Player, true)
+		ReplicatedStorage.Remotes.test:FireClient(Player, "ChangeWeapon")
 	end
 	-- Reload player controls to apply changes
 end
 
-function Gun:Zoom(player: Player, camera: Camera, gun: Gun, input: InputObject, ...): ()
+function Gun:Zoom(player: Player, inputState: Enum.UserInputState, camera: Camera, input: InputObject, ...): ()
 	if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
 		return
 	end
@@ -206,18 +204,26 @@ function Gun:Zoom(player: Player, camera: Camera, gun: Gun, input: InputObject, 
 
 	local args = { ... }
 
-	print(player.UserId, Zooming[player.UserId], connections[player.UserId])
+	print(player.UserId, self.zoomActive, self.connection)
 
-	if Zooming[player.UserId] then
+	if inputState == Enum.UserInputState.End and self.zoomActive then
 		print("Already zoomed in, toggling zoom out.")
-		Zooming[player.UserId] = false
+		self.zoomActive = false
+		local state, msg = pcall(function()
+			self.connection:Disconnect()
+		end)
 
-		if controller then
-			local playerSensitivity = UserGameSettings.MouseSensitivity or 1
-			GamepadCamera:Disable(playerSensitivity)
-			controller = false
+		ContextActionService:BindAction("ToggleSprint", function(_, inputState2, _)
+			PlayerControls:Sprint(game.Players.LocalPlayer, false, inputState2 == Enum.UserInputState.Begin)
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
+
+		if not state then
+			warn("Error disconnecting zoom connection:", msg)
+			wait()
+			GamepadCamera:Disable() -- Disable gamepad camera controls if an error occurs
 		else
-			connections[player.UserId]:Disconnect()
+			self.connection = nil
 		end
 
 		local tween = game:GetService("TweenService"):Create(
@@ -231,25 +237,28 @@ function Gun:Zoom(player: Player, camera: Camera, gun: Gun, input: InputObject, 
 		return
 	end
 
-	if not args[1] then
+	if not args[1] and inputState == Enum.UserInputState.Begin and not self.zoomActive then
+		PlayerControls:Sprint(player, false, false)
+		ContextActionService:UnbindAction("ToggleSprint")
+
 		if input.UserInputType == Enum.UserInputType.Gamepad1 then
-			Gun:ControllerZoom(player, camera, gun)
+			self:ControllerZoom(camera)
 			return
 		end
+		-- PlayerControls:Sprint(player, false, false) -- Load player controls to ensure they are ready for zooming
 		-- Adjust the camera's CFrame for zooming
 		local tween = game:GetService("TweenService"):Create(
 			camera,
 			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ FieldOfView = camera.FieldOfView / gun.magnification } -- Reset to default FOV
+			{ FieldOfView = camera.FieldOfView / self.magnification } -- Reset to default FOV
 		)
 		tween:Play()
 		tween.Completed:Wait()
-		Zooming[player.UserId] = true
+		self.zoomActive = true
 
 		local mouseDeltaSensitivity = (2 / math.sqrt(camera.FieldOfView)) / UserGameSettings.MouseSensitivity
 		userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
-
-		connections[player.UserId] = UserGameSettings:GetPropertyChangedSignal("MouseSensitivity"):Connect(function()
+		self.connection = UserGameSettings:GetPropertyChangedSignal("MouseSensitivity"):Connect(function()
 			mouseDeltaSensitivity = (2 / math.sqrt(camera.FieldOfView)) / UserGameSettings.MouseSensitivity
 			userInputService.MouseDeltaSensitivity = mouseDeltaSensitivity
 		end)
@@ -258,21 +267,20 @@ function Gun:Zoom(player: Player, camera: Camera, gun: Gun, input: InputObject, 
 	return
 end
 
-function Gun:ControllerZoom(player: Player, camera: Camera, gun: Gun): ()
-	controller = true
+function Gun:ControllerZoom(camera: Camera): ()
 	print("Zooming in with controller")
 	local tween = game:GetService("TweenService"):Create(
 		camera,
 		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ FieldOfView = camera.FieldOfView / gun.magnification } -- Adjust FOV for zoom
+		{ FieldOfView = camera.FieldOfView / self.magnification } -- Adjust FOV for zoom
 	)
 	tween:Play()
 	tween.Completed:Wait()
 
-	Zooming[player.UserId] = true
+	self.zoomActive = true
 	local playerSensitivity = UserGameSettings.MouseSensitivity or 1
 
-	GamepadCamera:Enable(gun.magnification, playerSensitivity) -- Enable gamepad camera controls
+	GamepadCamera:Enable(self.magnification, playerSensitivity) -- Enable gamepad camera controls
 end
 
 return Gun
@@ -281,30 +289,4 @@ return Gun
 	Module for Gun functionality.
 	Contains methods to create a gun and shoot it.
 	Handles raycasting to detect hits on players.
-]]
-
---[[
-	Usage:
-	local Gun = require(script.Parent.Gun)
-	local myGun = Gun.new(1500, 10, 5, 30, 600, 0.5, 750)
-	myGun:CreateHitbox(player.Character)
-	myGun:Shoot(player, cameraCFrame)
-	myGun:ChangeGun(playerGuns, "Gun1")
-]]
---[[
-	Notes:
-	- The gun's characteristics can be adjusted based on game requirements.
-	- The raycasting logic can be extended to include more complex hit detection.
-	- Ensure that the hitbox is properly set up in the player's character model.
-	- The `Waiting` table prevents rapid firing of the gun.
-]]
---[[
-	- The `Characters` table is used to filter raycasts to only hit other players.
-	- The `FindFirstModelParent` function is used to find the parent model of a hit instance.
-	- The `onHit` event is used to handle bullet hit detection and apply damage.
-]]
---[[
-	- The `CreateHitbox` function creates a hitbox for the player character to detect hits.
-	- The `Shoot` function handles the shooting logic, including raycasting and hit detection.
-	- The `ChangeGun` function allows switching between different guns for the player.
 ]]

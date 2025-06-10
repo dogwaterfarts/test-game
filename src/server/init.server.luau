@@ -30,7 +30,7 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 			end
 		end
 
-		Gun:Shoot(PlayerGuns[player.UserId][currentGun[player.UserId]], player, Camera, resistance)
+		PlayerGuns[player.UserId][currentGun[player.UserId]]:Shoot(player, Camera, resistance)
 		--print("Shot fired with gun:", currentGun[player.UserId])
 		return
 	end
@@ -42,28 +42,25 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player, args[1])
 	end
 
-	if Method == "ToggleSprint" then
-		PlayerControls:Sprint(player, false)
-	end
-
-	if Method == "Zoom" and args then
-		local Camera
-		local input
-		for _, v in pairs(args) do
-			if typeof(v) == "Instance" and v:IsA("Camera") then
-				Camera = v
-			end
-			if typeof(v) == "InputObject" then
-				input = v
-			end
-		end -- Assuming the first argument is the camera
-		Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]], input)
-	end
+	-- if Method == "Zoom" and args then
+	-- 	local Camera
+	-- 	local input
+	-- 	for _, v in pairs(args) do
+	-- 		if typeof(v) == "Instance" and v:IsA("Camera") then
+	-- 			Camera = v
+	-- 		end
+	-- 		if typeof(v) == "InputObject" then
+	-- 			input = v
+	-- 		end
+	-- 	end -- Assuming the first argument is the camera
+	-- 	Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]], input)
+	-- end
 end)
 
-ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player)
-	print(PlayerGuns[player.UserId][currentGun[player.UserId]])
-
+ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player, ...)
+	if ... then
+		return PlayerGuns[player.UserId]
+	end
 	return PlayerGuns[player.UserId][currentGun[player.UserId]]
 end
 
@@ -84,7 +81,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		Gun:CreateHitbox(character)
 		PlayerControls.Load(Player)
-		Gun:ChangeCharMovement(PlayerGuns[Player.UserId][currentGun[Player.UserId]], Player)
+		Gun0:ChangeCharMovement(Player)
 	end)
 
 	Player.CharacterRemoving:Connect(function(character)
