@@ -40,21 +40,24 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		currentGun[player.UserId] = "Gun" .. gunName
 
 		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player, args[1])
+		return
 	end
 
-	-- if Method == "Zoom" and args then
-	-- 	local Camera
-	-- 	local input
-	-- 	for _, v in pairs(args) do
-	-- 		if typeof(v) == "Instance" and v:IsA("Camera") then
-	-- 			Camera = v
-	-- 		end
-	-- 		if typeof(v) == "InputObject" then
-	-- 			input = v
-	-- 		end
-	-- 	end -- Assuming the first argument is the camera
-	-- 	Gun:Zoom(player, Camera, PlayerGuns[player.UserId][currentGun[player.UserId]], input)
-	-- end
+	if Method == "ChangeFireMode" and args then
+		local gunName = args[1]
+		if PlayerGuns[player.UserId][gunName] then
+			currentGun[player.UserId] = gunName
+			PlayerGuns[player.UserId][gunName]:ChangeFireMode()
+		else
+			print("Gun not found for player:", player.Name)
+		end
+		return
+	end
+
+	if Method == "Reload" then
+		PlayerGuns[player.UserId][currentGun[player.UserId]]:Reload(player)
+		return
+	end
 end)
 
 ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player, ...)
@@ -70,8 +73,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3) -- Example parameters
-		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1)
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, "Spray") -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, "Spray")
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
@@ -80,7 +83,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 		print(currentGun, PlayerGuns) -- Set the initial gun
 
 		Gun:CreateHitbox(character)
-		PlayerControls.Load(Player)
+		PlayerControls.Load()
 		Gun0:ChangeCharMovement(Player)
 	end)
 
@@ -94,8 +97,6 @@ game.Players.PlayerAdded:Connect(function(Player)
 			PlayerGuns[Player.UserId] = nil
 			currentGun[Player.UserId] = nil
 		end
-
-		PlayerControls.Remove(Player)
 	end)
 
 	Player.Chatted:Connect(function(message)
@@ -107,7 +108,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 		local gunVelocity = tonumber(message)
 
 		if PlayerGuns[Player.UserId][currentGun[Player.UserId]] then
-			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750) -- Example parameters
+			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, "Spray") -- Example parameters
 			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
 
 			Gun:ChangeGun(

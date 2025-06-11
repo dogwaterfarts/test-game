@@ -31,9 +31,9 @@ function Bullet:newBullet(
 	startVelocity: Vector3,
 	weight: number,
 	params: RaycastParams,
-	resistance: number
+	spread: number
 ): BulletObject
-	print("Creating new bullet")
+	-- print("Creating new bullet")
 	local onHitEventObject = Instance.new("BindableEvent")
 	local onTimeoutEventObject = Instance.new("BindableEvent")
 
@@ -47,9 +47,8 @@ function Bullet:newBullet(
 	wallParams.FilterType = Enum.RaycastFilterType.Include
 	wallParams:AddToFilter(CollectionService:GetTagged("Wall") or {})
 
-	if not resistance then
-		resistance = 0.5
-	end
+	startVelocity = startVelocity
+		+ Vector3.new(math.random(-spread, spread), math.random(-spread, spread), math.random(-spread, spread))
 
 	local bullet = {
 		position = startPosition,
@@ -57,7 +56,7 @@ function Bullet:newBullet(
 		onHit = onHitEventObject,
 		onTimeout = onTimeoutEventObject,
 		gravity = GRAVITY,
-		airResistance = math.exp(resistance), -- Use a default value if resistance is not provided
+		airResistance = math.exp(1), -- Use a default value if resistance is not provided
 		lifeTime = 0,
 		params = params,
 		weight = weight or 20, -- Default weight if not provided
@@ -65,7 +64,7 @@ function Bullet:newBullet(
 	}
 
 	bullet.updateConnection = RunS.Heartbeat:Connect(function(dt)
-		print("Updating bullet")
+		-- print("Updating bullet")
 		Bullet:updateBullet(bullet, dt)
 	end)
 
