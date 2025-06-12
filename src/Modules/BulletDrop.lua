@@ -47,8 +47,7 @@ function Bullet:newBullet(
 	wallParams.FilterType = Enum.RaycastFilterType.Include
 	wallParams:AddToFilter(CollectionService:GetTagged("Wall") or {})
 
-	startVelocity = startVelocity
-		+ Vector3.new(math.random(-spread, spread), math.random(-spread, spread), math.random(-spread, spread))
+	startVelocity = startVelocity + Random.new(math.random(0, 10000000)):NextUnitVector() * spread * 10 -- Add spread to the bullet velocity
 
 	local bullet = {
 		position = startPosition,
@@ -56,7 +55,7 @@ function Bullet:newBullet(
 		onHit = onHitEventObject,
 		onTimeout = onTimeoutEventObject,
 		gravity = GRAVITY,
-		airResistance = math.exp(1), -- Use a default value if resistance is not provided
+		airResistance = math.exp(0.3), -- Use a default value if resistance is not provided
 		lifeTime = 0,
 		params = params,
 		weight = weight or 20, -- Default weight if not provided

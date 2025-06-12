@@ -133,9 +133,13 @@ end)
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function()
 	playerGuns = ReplicatedStorage.Remotes.GetCurrentGun:InvokeServer(true, "")
+	print(playerGuns)
+	for a, b in playerGuns do
+		-- print("Gun found for player:", gun.Name)
+		-- setmetatable(gun, Gun)
 
-	for _, gun in pairs(playerGuns) do
-		setmetatable(gun, Gun)
+		print(a, b)
+		setmetatable(b, Gun)
 	end
 end)
 

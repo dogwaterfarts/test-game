@@ -62,6 +62,7 @@ end)
 
 ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player, ...)
 	if ... then
+		print(PlayerGuns[player.UserId])
 		return PlayerGuns[player.UserId]
 	end
 	return PlayerGuns[player.UserId][currentGun[player.UserId]]
@@ -73,8 +74,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, "Spray") -- Example parameters
-		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, "Spray")
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, 5, "Spray", true, 8) -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, 1, "Spray", false, 1)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
@@ -108,7 +109,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 		local gunVelocity = tonumber(message)
 
 		if PlayerGuns[Player.UserId][currentGun[Player.UserId]] then
-			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, "Spray") -- Example parameters
+			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, 1, "Spray", true, 8) -- Example parameters
 			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
 
 			Gun:ChangeGun(

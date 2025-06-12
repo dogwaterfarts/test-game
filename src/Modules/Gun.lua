@@ -22,6 +22,8 @@ export type Gun = typeof(setmetatable(
 		caliber: number,
 		weightPerRound: number,
 		magnification: number,
+		divergence: number,
+		ShotgunInfo: { isShotgun: boolean, shotgunPellets: number },
 		currentFireMode: string,
 		onCooldown: boolean,
 		zoomActive: boolean,
@@ -54,7 +56,10 @@ function Gun.new(
 	weightPerRound: number,
 	magnification: number,
 	reloadSpeed: number,
-	currentFireMode: string
+	divergence: number,
+	currentFireMode: string,
+	isShotgun: boolean,
+	pellets: number
 ): Gun
 	local self = {
 		initVelocity = initVelocity,
@@ -66,8 +71,16 @@ function Gun.new(
 		weightPerRound = weightPerRound or 100,
 		magnification = magnification, -- Default weight per round if not provided
 		reloadSpeed = reloadSpeed or 1, -- Default reload speed if not provided
+		divergence = divergence or 0.1, -- Default divergence if not provided
 		currentFireMode = currentFireMode or 1, -- Default fire mode if not provided
 		currentMagSize = magSize,
+		ShotgunInfo = isShotgun and {
+			isShotgun = false,
+			shotgunPellets = 1,
+		} or {
+			isShotgun = isShotgun or false,
+			shotgunPellets = pellets,
+		},
 		onCooldown = false,
 		zoomActive = false,
 		connection = nil,
@@ -146,10 +159,56 @@ function Gun:Shoot(Player: Player, CameraCFrame: CFrame): ()
 		end)
 	end
 
+	if self.ShotgunInfo then
+		for _ = 1, self.ShotgunInfo.shotgunPellets do
+			print("Shotgun mode active with", self.ShotgunInfo.shotgunPellets, "pellets.")
+			-- Create a new bullet for each pellet
+			local bullet = Bullet:newBullet(
+				CameraCFrame.Position,
+				LookVector * self.initVelocity,
+				self.weightPerRound,
+				params,
+				self.divergence
+			)
+
+			-- Connect the hit event for each bullet
+			bullet.onHit.Event:Connect(function(hitResult)
+				if typeof(hitResult) == "Vector3" then
+					local HRP = Player.Character:FindFirstChild("HumanoidRootPart")
+					local newHitPosition = Vector3.new(hitResult.X, HRP.Position.Y, hitResult.Z)
+					local _distance = (newHitPosition - CameraCFrame.Position).Magnitude
+					-- print(distance)
+					return
+				end
+
+				if hitResult then
+					-- print("Hit detected:", hitResult.Instance:GetFullName())
+					if hitResult.Instance == workspace.Baseplate then
+						-- print("Hit the ground") -- Change color to indicate hit
+						local _distance = (hitResult.Position - CameraCFrame.Position).Magnitude
+						-- print("Distance to hit:", distance)
+					end
+
+					local hitParent = FindFirstModelParent(hitResult.Instance)
+
+					if hitParent and hitParent:FindFirstChild("Humanoid") then
+						hitParent.Humanoid:TakeDamage(self.power)
+					end
+				end
+			end)
+		end
+		return
+	end
+
 	-- Perform the raycast
 	-- print(self)
-	local bullet =
-		Bullet:newBullet(CameraCFrame.Position, LookVector * self.initVelocity, self.weightPerRound, params, 20)
+	local bullet = Bullet:newBullet(
+		CameraCFrame.Position,
+		LookVector * self.initVelocity,
+		self.weightPerRound,
+		params,
+		self.divergence
+	)
 	-- Check if the bullet hit anything
 	bullet.onHit.Event:Connect(function(hitResult)
 		if typeof(hitResult) == "Vector3" then
