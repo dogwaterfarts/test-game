@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerControls = require(ReplicatedStorage.Modules.PlayerControls)
 local Gun = require(ReplicatedStorage.Modules.Gun)
 
 local currentGun = {} -- Initialize currentGun to an empty table
@@ -29,18 +30,43 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 			end
 		end
 
-		Gun:Shoot(PlayerGuns[player.UserId][currentGun[player.UserId]], player, Camera, resistance)
+		PlayerGuns[player.UserId][currentGun[player.UserId]]:Shoot(player, Camera, resistance)
 		--print("Shot fired with gun:", currentGun[player.UserId])
 		return
 	end
 
-	if Method == "ChangeGun" then
+	if Method == "ChangeGun" and args then
 		local gunName = 1 - currentGun[player.UserId]:sub(-1) -- Toggle between Gun0 and Gun1
 		currentGun[player.UserId] = "Gun" .. gunName
 
-		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player)
+		Gun:ChangeGun(PlayerGuns[player.UserId], currentGun[player.UserId], player, args[1])
+		return
+	end
+
+	if Method == "ChangeFireMode" and args then
+		local gunName = args[1]
+		if PlayerGuns[player.UserId][gunName] then
+			currentGun[player.UserId] = gunName
+			PlayerGuns[player.UserId][gunName]:ChangeFireMode()
+		else
+			print("Gun not found for player:", player.Name)
+		end
+		return
+	end
+
+	if Method == "Reload" then
+		PlayerGuns[player.UserId][currentGun[player.UserId]]:Reload(player)
+		return
 	end
 end)
+
+ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player, ...)
+	if ... then
+		print(PlayerGuns[player.UserId])
+		return PlayerGuns[player.UserId]
+	end
+	return PlayerGuns[player.UserId][currentGun[player.UserId]]
+end
 
 game.Players.PlayerAdded:Connect(function(Player)
 	Player.CharacterAdded:Connect(function(character)
@@ -48,8 +74,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750) -- Example parameters
-		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1)
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, 5, "Spray", true, 8) -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, 1, "Spray", false, 1)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
@@ -58,6 +84,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 		print(currentGun, PlayerGuns) -- Set the initial gun
 
 		Gun:CreateHitbox(character)
+		PlayerControls.Load()
+		Gun0:ChangeCharMovement(Player)
 	end)
 
 	Player.CharacterRemoving:Connect(function(character)
@@ -68,6 +96,7 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		if PlayerGuns[Player.UserId] then
 			PlayerGuns[Player.UserId] = nil
+			currentGun[Player.UserId] = nil
 		end
 	end)
 
@@ -80,10 +109,15 @@ game.Players.PlayerAdded:Connect(function(Player)
 		local gunVelocity = tonumber(message)
 
 		if PlayerGuns[Player.UserId][currentGun[Player.UserId]] then
-			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750) -- Example parameters
+			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, 1, "Spray", true, 8) -- Example parameters
 			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
 
-			Gun:ChangeGun(PlayerGuns[Player.UserId], currentGun[Player.UserId], Player)
+			Gun:ChangeGun(
+				PlayerGuns[Player.UserId],
+				currentGun[Player.UserId],
+				Player,
+				ReplicatedStorage.Remotes.GetCurrentGun:InvokeServer()
+			)
 		end
 	end)
 end)
