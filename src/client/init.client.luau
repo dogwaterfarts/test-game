@@ -29,17 +29,19 @@ ContextActionService:BindAction("ToggleSprint", function(_, inputState, _)
 end, false, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
 
 ContextActionService:BindAction("ChangeFireMode", function(_, inputState, _)
-	if inputState ~= Enum.UserInputState.Begin then
+	if inputState ~= Enum.UserInputState.Begin or not playerGuns[currentGun].canChangeFireMode then
+		print("boo")
 		return Enum.ContextActionResult.Pass
 	end
 
+	print(playerGuns[currentGun].canChangeFireMode)
 	ReplicatedStorage.Remotes.test:FireServer("ChangeFireMode", currentGun)
 	task.wait()
 
 	return Enum.ContextActionResult.Sink
 end, false, Enum.KeyCode.F, Enum.KeyCode.DPadDown)
 
-ContextActionService:BindAction("ChangeFireMode", function(_, inputState, _)
+ContextActionService:BindAction("Reload", function(_, inputState, _)
 	if inputState ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
 	end
@@ -82,6 +84,21 @@ ContextActionService:BindAction("Shoot", function(_, inputState, _)
 
 	return Enum.ContextActionResult.Pass
 end, false, Enum.KeyCode.MouseLeftButton, Enum.KeyCode.ButtonR2, Enum.KeyCode.Q)
+
+ContextActionService:BindAction("ThrowGrenade", function(_, inputState, _)
+	if inputState ~= Enum.UserInputState.Begin then
+		return Enum.ContextActionResult.Pass
+	end
+
+	local playerGun = playerGuns[currentGun]
+	if not playerGun then
+		print("No gun found for the player.")
+		return Enum.ContextActionResult.Pass
+	end
+
+	ReplicatedStorage.Remotes.test:FireServer("ThrowGrenade", workspace.CurrentCamera.CFrame)
+	return Enum.ContextActionResult.Sink
+end, false, Enum.KeyCode.G, Enum.KeyCode.ButtonR1)
 
 ContextActionService:BindAction("ChangeGun", function(_, inputState, key)
 	if inputState ~= Enum.UserInputState.Begin then

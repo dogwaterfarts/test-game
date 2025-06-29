@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Grenade = require(ReplicatedStorage.Modules.Grenade)
 local PlayerControls = require(ReplicatedStorage.Modules.PlayerControls)
 local Gun = require(ReplicatedStorage.Modules.Gun)
 
@@ -58,6 +59,24 @@ ReplicatedStorage.Remotes.test.OnServerEvent:Connect(function(player, Method, ..
 		PlayerGuns[player.UserId][currentGun[player.UserId]]:Reload(player)
 		return
 	end
+
+	if Method == "ThrowGrenade" and args then
+		local camera = args[1]
+
+		local grenade = Grenade.new(
+			player.Character.HumanoidRootPart.Position,
+			camera.LookVector * 300, -- Initial velocity can be set as needed
+			50, -- Damage value can be adjusted
+			5 -- Radius of explosion
+		)
+		if grenade then
+			grenade:Throw()
+			print("Grenade thrown by player:", player.Name)
+		else
+			print("No grenade to throw for player:", player.Name)
+		end
+		return
+	end
 end)
 
 ReplicatedStorage.Remotes.GetCurrentGun.OnServerInvoke = function(player, ...)
@@ -74,8 +93,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 
 		-- Initialize guns for the player
 
-		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, 5, "Spray", true, 8) -- Example parameters
-		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, 1, "Spray", false, 1)
+		local Gun0 = Gun.new(1500, 10, 5, 30, 600, 0.5, 750, 3, 0.5, 5, "Spray", true, false, 8, "", true) -- Example parameters
+		local Gun1 = Gun.new(1, 1, 1, 1, 600, 1, 1, 1, 1, 1, "Spray", false, true, 1, "", false)
 		PlayerGuns[Player.UserId]["Gun0"] = Gun0
 		PlayerGuns[Player.UserId]["Gun1"] = Gun1
 
@@ -109,7 +128,8 @@ game.Players.PlayerAdded:Connect(function(Player)
 		local gunVelocity = tonumber(message)
 
 		if PlayerGuns[Player.UserId][currentGun[Player.UserId]] then
-			local newGun = Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, 1, "Spray", true, 8) -- Example parameters
+			local newGun =
+				Gun.new(gunVelocity, 10, 3.2, 30, 600, 0.5, 750, 3, 0.5, 1, "Spray", true, false, 8, "", true) -- Example parameters
 			PlayerGuns[Player.UserId][currentGun[Player.UserId]] = newGun
 
 			Gun:ChangeGun(
