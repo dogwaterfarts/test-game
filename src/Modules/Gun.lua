@@ -23,8 +23,14 @@ export type Gun = typeof(setmetatable(
 		weightPerRound: number,
 		magnification: number,
 		divergence: number,
-		ShotgunInfo: { isShotgun: boolean, shotgunPellets: number },
+		GunInfo: {
+			AmmoType: string,
+			Pellets: number,
+			isShotgun: boolean,
+			isSniper: boolean,
+		},
 		currentFireMode: string,
+		canChangeFireMode: boolean,
 		onCooldown: boolean,
 		zoomActive: boolean,
 		connection: { [number]: RBXScriptConnection },
@@ -59,7 +65,10 @@ function Gun.new(
 	divergence: number,
 	currentFireMode: string,
 	isShotgun: boolean,
-	pellets: number
+	isSniper: boolean,
+	pellets: number,
+	AmmoType: string,
+	canChangeFireMode: boolean
 ): Gun
 	local self = {
 		initVelocity = initVelocity,
@@ -73,13 +82,13 @@ function Gun.new(
 		reloadSpeed = reloadSpeed or 1, -- Default reload speed if not provided
 		divergence = divergence or 0.1, -- Default divergence if not provided
 		currentFireMode = currentFireMode or 1, -- Default fire mode if not provided
+		canChangeFireMode = canChangeFireMode, -- Default to allow changing fire mode
 		currentMagSize = magSize,
-		ShotgunInfo = isShotgun and {
-			isShotgun = false,
-			shotgunPellets = 1,
-		} or {
-			isShotgun = isShotgun or false,
-			shotgunPellets = pellets,
+		GunInfo = {
+			AmmoType = AmmoType,
+			Pellets = pellets or 1, -- Default pellets if not provided
+			isShotgun = isShotgun or false, -- Default to not shotgun
+			isSniper = isSniper or false, -- Default to not sniper
 		},
 		onCooldown = false,
 		zoomActive = false,
@@ -159,9 +168,9 @@ function Gun:Shoot(Player: Player, CameraCFrame: CFrame): ()
 		end)
 	end
 
-	if self.ShotgunInfo then
-		for _ = 1, self.ShotgunInfo.shotgunPellets do
-			print("Shotgun mode active with", self.ShotgunInfo.shotgunPellets, "pellets.")
+	if self.GunInfo.isShotgun then
+		for _ = 1, self.GunInfo.Pellets do
+			print("Shotgun mode active with", self.GunInfo.Pellet, "pellets.")
 			-- Create a new bullet for each pellet
 			local bullet = Bullet:newBullet(
 				CameraCFrame.Position,
