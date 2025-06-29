@@ -1,0 +1,22 @@
+Aim sway (on snipers)
+Recoil
+Muzzle dampening
+Ammo types
+Damage multipliers
+Crouching
+Animations
+Visual effects
+Sound effects
+Pick ups
+Holster speed
+
+COMPLETED:
+Hip choke
+Walkspeed
+Equip speed
+Aiming
+Fire modes
+Shotguns
+Static spread
+Reloading
+Throwables
